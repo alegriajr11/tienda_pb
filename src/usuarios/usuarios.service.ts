@@ -27,6 +27,12 @@ export class UsuariosService {
         });
     }
 
+    async findOne(id: number): Promise<UsuarioEntity | null> {
+        return this.usuariosRepository.findOne({
+            where: { id },
+        });
+    }
+
     async create(createUsuarioDto: CreateUsuarioDto) {
         const userExists = await this.usuariosRepository.findOne({ where: { email: createUsuarioDto.email } });
         if (userExists) {
