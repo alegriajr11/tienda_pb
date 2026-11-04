@@ -64,4 +64,20 @@ export class UsuariosService {
 
         
     }
+
+    //1. Guardar el codigo OTP y la fecha de expiración en la base de datos
+    async saveOtpCode(userId: number, otpCode: string, otpExpiresAt: Date): Promise<void> {
+        await this.usuariosRepository.update(userId, { 
+            otpCode, 
+            otpExpiresAt 
+        });
+    }
+
+    //2. Limpiar el codigo una vez verificado o expirado
+    async clearOtpCode(userId: number): Promise<void> {
+        await this.usuariosRepository.update(userId, {
+            otpCode: null,
+            otpExpiresAt: null
+        });
+    }
 }

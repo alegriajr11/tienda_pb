@@ -19,6 +19,13 @@ export class UsuarioEntity {
     @Column({type: 'boolean', default: true})
     activo!: boolean;
 
+    //Campos temporales para el inicio de sesion OTP
+    @Column({type: 'varchar', length: 6, nullable: true})
+    otpCode?: string | null;
+
+    @Column({type: 'datetime', nullable: true})
+    otpExpiresAt?: Date | null;
+
     @Column()
     rolId!: number;
 
