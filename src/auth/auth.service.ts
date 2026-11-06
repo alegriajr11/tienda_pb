@@ -4,12 +4,16 @@ import { RegisterDto } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
+import { MailService } from 'src/mail/mail.service';
+import { SolicitarOtpDto } from './dto/solicitar-otp.dto';
+import { LoginOtpDto } from './dto/login-otp.dto';
 
 @Injectable()
 export class AuthService {
     constructor(
         private readonly usuariosService: UsuariosService,
-        private readonly jwtService: JwtService
+        private readonly jwtService: JwtService,
+        private readonly mailService: MailService
     ) { }
 
     async register(registerDto: RegisterDto) {
@@ -64,5 +68,54 @@ export class AuthService {
             message: "Inicio de Sesion exitoso",
             access_token: token,
         }
+    }
+
+    async solicitarOtp(solicitarOtpDto: SolicitarOtpDto) {
+        const usuario = await this.usuariosService.findByEmail(solicitarOtpDto.email);
+
+        if (!usuario) {
+            throw new UnauthorizedException('El correo no existe');
+        }
+
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+        await this.usuariosService.saveOtpCode(usuario.id, otpCode, otpExpiresAt);
+        await this.mailService.sentOtpEmail(usuario.email, otpCode);
+
+        return {
+            message: 'Código OTP enviado exitosamente',
+        };
+    }
+
+    async loginOtp(loginOtpDto: LoginOtpDto) {
+        const usuario = await this.usuariosService.findByEmail(loginOtpDto.email);
+
+        if (!usuario || !usuario.activo) {
+            throw new UnauthorizedException('Credenciales invalidas');
+        }
+
+        if (
+            !usuario.otpCode ||
+            usuario.otpCode !== loginOtpDto.codigoOtp ||
+            !usuario.otpExpiresAt ||
+            usuario.otpExpiresAt.getTime() <= Date.now()
+        ) {
+            throw new UnauthorizedException('El código OTP es inválido o ha expirado');
+        }
+
+        const payload = {
+            sub: usuario.id,
+            email: usuario.email,
+            rol: usuario.rol?.nombre,
+        };
+        const token = await this.jwtService.signAsync(payload);
+
+        await this.usuariosService.clearOtpCode(usuario.id);
+
+        return {
+            message: 'Inicio de sesión exitoso',
+            access_token: token,
+        };
     }
 }

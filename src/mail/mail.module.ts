@@ -19,8 +19,7 @@ import { MAIL_TRANSPORTER, MailService } from './mail.service';
         return nodemailer.createTransport({
           host: configService.getOrThrow<string>('MAIL_HOST'),
           port,
-          secure: port === 465,
-          requireTLS: port === 587,
+          secure: false, // true for 465, false for other ports
           auth: {
             user: configService.getOrThrow<string>('MAIL_USER'),
             pass: configService.getOrThrow<string>('MAIL_PASSWORD'),
